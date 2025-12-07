@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NU256 – Genome Intelligence</title>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#020308; }
+    .hero { position:relative; width:100%; height:100vh; }
+    canvas { position:absolute; inset:0; display:block; }
+
+    .hero-content {
+      position:absolute; inset:0; z-index:10;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      text-align:center; pointer-events:none;
+      background: radial-gradient(circle at top, rgba(0,0,0,0.5), transparent 55%);
+      color:white; font-family:sans-serif;
+    }
+    h1 { font-size:3.8rem; margin:1rem 0; }
+    .subtitle { max-width:700px; opacity:0.85; line-height:1.6; }
+  </style>
+</head>
+
+<body>
+  <div class="hero">
+    <div class="hero-content">
+      <div>GENOME INTELLIGENCE PLATFORM</div>
+      <h1>NU256</h1>
+      <p class="subtitle">A living, mutating model of the human genome.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    /* ✅ CLEAN & CORRECT THREE.JS CDN IMPORTS */
+    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+    import { EffectComposer } from "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js";
+    import { RenderPass } from "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js";
+
+    const hero = document.querySelector(".hero");
+
+    /* --- Scene Setup --- */
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020308);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 0.4, 14);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    hero.appendChild(renderer.domElement);
+
+    /* --- Postprocessing (Bloom Glow) --- */
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.2, 0.6, 0));
+
+    /* --- DNA Particles --- */
+    const dnaGeom = new THREE.BufferGeometry();
+    const positions = [];
+    const segs = 1800, h = 7, r = 2.2;
+
+    for (let i = 0; i < segs; i++) {
+      const t = (i / segs) * Math.PI * 10;
+      const y = (i / segs) * h - h / 2;
+
+      positions.push(Math.cos(t) * r, y, Math.sin(t) * r);
+      positions.push(Math.cos(t + Math.PI) * r, y, Math.sin(t + Math.PI) * r);
+    }
+
+    dnaGeom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+
+    const dna = new THREE.Points(
+      dnaGeom,
+      new THREE.PointsMaterial({
+        size: 0.065,
+        color: 0x82c5ff,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+
+    scene.add(dna);
+
+    /* --- Animation Loop --- */
+    function animate() {
+      dna.rotation.y += 0.003;
+      dna.rotation.x = Math.sin(Date.now() * 0.0003) * 0.15;
+
+      composer.render();
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    /* --- Resize Handling --- */
+    window.addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      composer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>
